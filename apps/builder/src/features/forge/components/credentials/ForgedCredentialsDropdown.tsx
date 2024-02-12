@@ -34,14 +34,13 @@ export const ForgedCredentialsDropdown = ({
   const router = useRouter()
   const { showToast } = useToast()
   const { workspace, currentRole } = useWorkspace()
-  const { data, refetch, isLoading } =
-    trpc.integrationCredentials.listCredentials.useQuery(
-      {
-        workspaceId: workspace?.id as string,
-        type: blockDef.id,
-      },
-      { enabled: !!workspace?.id }
-    )
+  const { data, refetch, isLoading } = trpc.forge.listCredentials.useQuery(
+    {
+      workspaceId: workspace?.id as string,
+      type: blockDef.id,
+    },
+    { enabled: !!workspace?.id }
+  )
   const [isDeleting, setIsDeleting] = useState<string>()
 
   const { mutate } = trpc.credentials.deleteCredentials.useMutation({
@@ -135,7 +134,7 @@ export const ForgedCredentialsDropdown = ({
         </Text>
       </MenuButton>
       <MenuList>
-        <Stack maxH={'35vh'} overflowY="scroll" spacing="0">
+        <Stack maxH={'35vh'} overflowY="auto" spacing="0">
           {data?.credentials.map((credentials) => (
             <MenuItem
               role="menuitem"

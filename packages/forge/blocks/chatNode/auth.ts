@@ -8,8 +8,9 @@ export const auth = {
       label: 'API key',
       isRequired: true,
       helperText:
-        'You can generate an API key [here](https://www.chatnode.ai/account/settings).',
-      input: 'password',
+        'You can generate an API key [here](https://go.chatnode.ai/typebot).',
+      inputType: 'password',
+      withVariableButton: false,
     }),
   }),
 } satisfies AuthDefinition

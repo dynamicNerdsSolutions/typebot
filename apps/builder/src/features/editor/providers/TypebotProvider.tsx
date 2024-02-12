@@ -1,5 +1,5 @@
 import { PublicTypebot, PublicTypebotV6, TypebotV6 } from '@typebot.io/schemas'
-import { Router, useRouter } from 'next/router'
+import { Router } from 'next/router'
 import {
   createContext,
   ReactNode,
@@ -25,6 +25,7 @@ import { isPublished as isPublishedHelper } from '@/features/publish/helpers/isP
 import { convertPublicTypebotToTypebot } from '@/features/publish/helpers/convertPublicTypebotToTypebot'
 import { trpc } from '@/lib/trpc'
 import { EventsActions, eventsActions } from './typebotActions/events'
+import { useGroupsStore } from '@/features/graph/hooks/useGroupsStore'
 
 const autoSaveTimeout = 10000
 
@@ -58,7 +59,7 @@ const typebotContext = createContext<
     is404: boolean
     isPublished: boolean
     isSavingLoading: boolean
-    save: () => Promise<TypebotV6 | undefined>
+    save: () => Promise<void>
     undo: () => void
     redo: () => void
     canRedo: boolean
@@ -85,9 +86,11 @@ export const TypebotProvider = ({
   children: ReactNode
   typebotId?: string
 }) => {
-  const { push } = useRouter()
   const { showToast } = useToast()
   const [is404, setIs404] = useState(false)
+  const setGroupsCoordinates = useGroupsStore(
+    (state) => state.setGroupsCoordinates
+  )
 
   const {
     data: typebotData,
@@ -169,10 +172,19 @@ export const TypebotProvider = ({
     { redo, undo, flush, canRedo, canUndo, set: setLocalTypebot },
   ] = useUndo<TypebotV6>(undefined, {
     isReadOnly,
+    onUndo: (t) => {
+      setGroupsCoordinates(t.groups)
+    },
+    onRedo: (t) => {
+      setGroupsCoordinates(t.groups)
+    },
   })
 
   useEffect(() => {
-    if (!typebot && isDefined(localTypebot)) setLocalTypebot(undefined)
+    if (!typebot && isDefined(localTypebot)) {
+      setLocalTypebot(undefined)
+      setGroupsCoordinates(undefined)
+    }
     if (isFetchingTypebot || !typebot) return
     if (
       typebot.id !== localTypebot?.id ||
@@ -180,13 +192,14 @@ export const TypebotProvider = ({
         new Date(localTypebot.updatedAt).getTime()
     ) {
       setLocalTypebot({ ...typebot })
+      setGroupsCoordinates(typebot.groups)
       flush()
     }
   }, [
     flush,
     isFetchingTypebot,
     localTypebot,
-    push,
+    setGroupsCoordinates,
     setLocalTypebot,
     showToast,
     typebot,
@@ -195,16 +208,24 @@ export const TypebotProvider = ({
   const saveTypebot = useCallback(
     async (updates?: Partial<TypebotV6>) => {
       if (!localTypebot || !typebot || isReadOnly) return
-      const typebotToSave = { ...localTypebot, ...updates }
+      const typebotToSave = {
+        ...localTypebot,
+        ...updates,
+        updatedAt: new Date(),
+      }
       if (dequal(omit(typebot, 'updatedAt'), omit(typebotToSave, 'updatedAt')))
         return
       setLocalTypebot({ ...typebotToSave })
-      const { typebot: newTypebot } = await updateTypebot({
-        typebotId: typebotToSave.id,
-        typebot: typebotToSave,
-      })
-      setLocalTypebot({ ...newTypebot })
-      return newTypebot
+      try {
+        await updateTypebot({
+          typebotId: typebotToSave.id,
+          typebot: typebotToSave,
+        })
+      } catch {
+        setLocalTypebot({
+          ...localTypebot,
+        })
+      }
     },
     [isReadOnly, localTypebot, setLocalTypebot, typebot, updateTypebot]
   )

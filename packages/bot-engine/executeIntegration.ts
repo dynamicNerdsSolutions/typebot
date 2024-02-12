@@ -10,31 +10,55 @@ import { ExecuteIntegrationResponse } from './types'
 import { IntegrationBlockType } from '@typebot.io/schemas/features/blocks/integrations/constants'
 import { executeOpenAIBlock } from './blocks/integrations/legacy/openai/executeOpenAIBlock'
 import { executeForgedBlock } from './forge/executeForgedBlock'
+import { isNotDefined } from '@typebot.io/lib'
+import { env } from '@typebot.io/env'
 
 export const executeIntegration =
   (state: SessionState) =>
   async (block: IntegrationBlock): Promise<ExecuteIntegrationResponse> => {
     switch (block.type) {
       case IntegrationBlockType.GOOGLE_SHEETS:
-        return executeGoogleSheetBlock(state, block)
+        return {
+          ...(await executeGoogleSheetBlock(state, block)),
+          startTimeShouldBeUpdated: true,
+        }
       case IntegrationBlockType.CHATWOOT:
         return executeChatwootBlock(state, block)
       case IntegrationBlockType.GOOGLE_ANALYTICS:
         return executeGoogleAnalyticsBlock(state, block)
       case IntegrationBlockType.EMAIL:
         return executeSendEmailBlock(state, block)
-      case IntegrationBlockType.WEBHOOK:
       case IntegrationBlockType.ZAPIER:
       case IntegrationBlockType.MAKE_COM:
       case IntegrationBlockType.PABBLY_CONNECT:
-        return executeWebhookBlock(state, block)
+        return {
+          ...(await executeWebhookBlock(state, block, {
+            disableRequestTimeout: true,
+          })),
+          startTimeShouldBeUpdated: true,
+        }
+      case IntegrationBlockType.WEBHOOK:
+        return {
+          ...(await executeWebhookBlock(state, block, {
+            disableRequestTimeout: isNotDefined(env.CHAT_API_TIMEOUT),
+          })),
+        }
       case IntegrationBlockType.OPEN_AI:
-        return executeOpenAIBlock(state, block)
+        return {
+          ...(await executeOpenAIBlock(state, block)),
+          startTimeShouldBeUpdated: true,
+        }
       case IntegrationBlockType.PIXEL:
         return executePixelBlock(state, block)
       case IntegrationBlockType.ZEMANTIC_AI:
-        return executeZemanticAiBlock(state, block)
+        return {
+          ...(await executeZemanticAiBlock(state, block)),
+          startTimeShouldBeUpdated: true,
+        }
       default:
-        return executeForgedBlock(state, block)
+        return {
+          ...(await executeForgedBlock(state, block)),
+          startTimeShouldBeUpdated: true,
+        }
     }
   }

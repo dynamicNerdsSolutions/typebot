@@ -13,6 +13,8 @@ export const startChatPreview = publicProcedure
       method: 'POST',
       path: '/v1/typebots/{typebotId}/preview/startChat',
       summary: 'Start preview chat',
+      description:
+        'Use this endpoint to test your bot. The answers will not be saved. And some blocks like "Send email" will be skipped.',
     },
   })
   .input(startPreviewChatInputSchema)
@@ -64,6 +66,9 @@ export const startChatPreview = publicProcedure
             logs,
             clientSideActions,
             visitedEdges,
+            hasCustomEmbedBubble: messages.some(
+              (message) => message.type === 'custom-embed'
+            ),
           })
 
       return {

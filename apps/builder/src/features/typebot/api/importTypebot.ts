@@ -12,9 +12,9 @@ import {
 import { z } from 'zod'
 import { getUserRoleInWorkspace } from '@/features/workspace/helpers/getUserRoleInWorkspace'
 import { sanitizeGroups, sanitizeSettings } from '../helpers/sanitizers'
-import { sendTelemetryEvents } from '@typebot.io/lib/telemetry/sendTelemetryEvent'
 import { preprocessTypebot } from '@typebot.io/schemas/features/typebot/helpers/preprocessTypebot'
 import { migrateTypebot } from '@typebot.io/lib/migrations/migrateTypebot'
+import { trackEvents } from '@typebot.io/lib/telemetry/trackEvents'
 
 const omittedProps = {
   id: true,
@@ -35,14 +35,24 @@ const omittedProps = {
 const importingTypebotSchema = z.preprocess(
   preprocessTypebot,
   z.discriminatedUnion('version', [
-    typebotV5Schema._def.schema.omit(omittedProps).extend({
-      resultsTablePreferences: resultsTablePreferencesSchema.nullish(),
-      selectedThemeTemplateId: z.string().nullish(),
-    }),
-    typebotV6Schema.omit(omittedProps).extend({
-      resultsTablePreferences: resultsTablePreferencesSchema.nullish(),
-      selectedThemeTemplateId: z.string().nullish(),
-    }),
+    typebotV6Schema
+      .omit(omittedProps)
+      .extend({
+        resultsTablePreferences: resultsTablePreferencesSchema.nullish(),
+        selectedThemeTemplateId: z.string().nullish(),
+      })
+      .openapi({
+        title: 'Typebot V6',
+      }),
+    typebotV5Schema._def.schema
+      .omit(omittedProps)
+      .extend({
+        resultsTablePreferences: resultsTablePreferencesSchema.nullish(),
+        selectedThemeTemplateId: z.string().nullish(),
+      })
+      .openapi({
+        title: 'Typebot V5',
+      }),
   ])
 )
 
@@ -82,7 +92,11 @@ export const importTypebot = authenticatedProcedure
   })
   .input(
     z.object({
-      workspaceId: z.string(),
+      workspaceId: z
+        .string()
+        .describe(
+          '[Where to find my workspace ID?](../how-to#how-to-find-my-workspaceid)'
+        ),
       typebot: importingTypebotSchema,
     })
   )
@@ -137,7 +151,7 @@ export const importTypebot = authenticatedProcedure
 
     const parsedNewTypebot = typebotV6Schema.parse(newTypebot)
 
-    await sendTelemetryEvents([
+    await trackEvents([
       {
         name: 'Typebot created',
         workspaceId: parsedNewTypebot.workspaceId,

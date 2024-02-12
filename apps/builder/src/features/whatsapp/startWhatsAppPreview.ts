@@ -16,7 +16,7 @@ export const startWhatsAppPreview = authenticatedProcedure
   .meta({
     openapi: {
       method: 'POST',
-      path: '/typebots/{typebotId}/whatsapp/start-preview',
+      path: '/v1/typebots/{typebotId}/whatsapp/start-preview',
       summary: 'Start preview',
       tags: ['WhatsApp'],
       protect: true,
@@ -128,6 +128,7 @@ export const startWhatsAppPreview = authenticatedProcedure
         messages,
         input,
         clientSideActions,
+        isFirstChatChunk: true,
         credentials: {
           phoneNumberId: env.WHATSAPP_PREVIEW_FROM_PHONE_NUMBER_ID,
           systemUserAccessToken: env.META_SYSTEM_USER_TOKEN,

@@ -68,8 +68,7 @@ export const WhatsAppPreviewInstructions = (props: StackProps) => {
     <Stack
       as="form"
       spacing={4}
-      overflowY="scroll"
-      className="hide-scrollbar"
+      overflowY="auto"
       w="full"
       px="1"
       onSubmit={sendWhatsAppPreviewStartMessage}
@@ -79,19 +78,13 @@ export const WhatsAppPreviewInstructions = (props: StackProps) => {
         <Text fontSize="sm">Need help?</Text>
         <Button
           as={Link}
-          href="https://docs.typebot.io/embed/whatsapp"
+          href="https://docs.typebot.io/deploy/whatsapp/overview"
           leftIcon={<BuoyIcon />}
           size="sm"
         >
           Check the docs
         </Button>
       </HStack>
-      <Alert status="warning">
-        <AlertIcon />
-        The WhatsApp integration is still in beta test.
-        <br />
-        Your bug reports are greatly appreciate 🧡
-      </Alert>
       <TextInput
         label="Your phone number"
         placeholder="+XXXXXXXXXXXX"
